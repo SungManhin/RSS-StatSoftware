@@ -1,0 +1,86 @@
+---
+title: "宋文轩_2020201532_统计软件第1次作业"
+date: "2022-09-21"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+## 任务 1
+
+```{r, comment=""}
+# 经查五位数字的日期格式为固定起始日期后相距天数的一种表示方式
+# Windows常用1970-01-01为起始日期,一说使用1900-01-01
+as.Date(20219, origin = '1970-01-01')
+as.Date(20219, origin = '1900-01-01')
+```
+
+## 任务 2
+```{r, warning=FALSE, message=FALSE, comment=""}
+library(lubridate)
+path1 = "C:/Users/SungManhin/OneDrive - ruc.edu.cn/统计软件/电影数据分析/电影数据.csv"
+
+# 导入数据"电影数据.csv"
+movie = read.csv(path1, header = T)
+difftime(movie$showtime[movie$name == "夜孔雀"], movie$showtime[movie$name == "叶问3"], units = "days")
+```
+ 
+## 任务 3
+```{r, comment=""}
+# 读入"film.csv"
+path2 = "C:/Users/SungManhin/OneDrive - ruc.edu.cn/统计软件/第一次作业/film.csv"
+a = read.csv(path2, header = T, fileEncoding = "GBK")
+summary(a)
+```
+```{r, comment=""}
+# 查看是否有缺失值
+any(is.na(a))
+# 确实有缺失值,is.na(a)可以用以确定缺失值的位置.输出太长暂不显示
+# 可以用complete.cases()查看缺失值所在行,返回FALSE即为该行存在缺失值
+complete.cases(a)
+# 删除缺失值所在一行
+a = na.omit(a)
+
+```
+```{r, comment=""}
+# 查看票房最高和最低的观测
+a[which.max(a$电影票房), ]; a[which.min(a$电影票房), ]
+
+```
+## 任务 4
+```{r, comment=""}
+# 给a$dangqi赋值
+a$dangqi[1:dim(a)[1]] = rep(0, dim(a)[1])
+
+# 根据条件赋档期
+a$dangqi[which((a$上映月份 == 12) | (a$上映月份 == 1) | (a$上映月份 == 2))] = "贺岁档"
+a$dangqi[which((a$上映月份 == 7) | (a$上映月份 == 8) | (a$上映月份 == 9))] = "暑期档"
+a$dangqi[which((a$上映月份 == 3) | (a$上映月份 == 4))] = "普通档"
+a$dangqi[which((a$上映月份 == 5) | (a$上映月份 == 6))] = "黄金1档"
+a$dangqi[which((a$上映月份 == 10) | (a$上映月份 == 11))] = "黄金2档"
+
+# 对dangqi计数
+table(a$dangqi)
+
+```
+## 任务 5
+```{r, comment=""}
+# 合并导演年代为30和40的记录
+a$导演年代[which(a$导演年代 == 40 | a$导演年代 == 30)] = "50以下"
+a$导演年代 = factor(a$导演年代, levels = c("50以下", 50, 60, 70, 80),ordered = T)
+
+a$导演年代
+```
+
+## 任务 6
+```{r, comment=""}
+# 将上映年份和上映月份和"1号"作为字符串用"-"连接起来
+a = transform(a, 上映日期 = paste(上映年份, 上映月份, 1, sep = "-"))
+
+# 转换为Date格式
+a$上映日期 = as.Date(a$上映日期, format = "%Y-%m-%d")
+class(a$上映日期[1]) # "Date"
+
+# 按照递进顺序排序,上映日期升序,电影票房降序,展示前10行
+a[order(a$上映日期, -a$电影票房, a$类型)[1:10],]
+```

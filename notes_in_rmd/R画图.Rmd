@@ -1,0 +1,156 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## 定性变量画图 
+
+```{r}
+data=read.csv("C:/Users/SungManhin/OneDrive - ruc.edu.cn/统计软件/novel.csv")
+summary(data) # 有 NA 
+novel=na.omit(data)
+attach(novel)
+dim(novel)
+a=table(novel$小说类型)
+a=a[order(a,decreasing=T)]
+barplot(a[1:5],names.arg=names(a)[1:5],col=rainbow(5,alpha=0.5),
+         xlab="小说类型",ylab="频数")
+```
+
+```{r}
+#将小说类型进行简要合并
+novel$'小说类别'<-"其他"
+novel$'小说类别'[novel$小说类型=="都市小说"|novel$小说类型=="职场小说"] <- "都市类小说"
+novel$'小说类别'[novel$小说类型=="科幻小说"|novel$小说类型=="玄幻小说"|novel$小说类型=="奇幻小说"] <- "幻想类小说"
+novel$'小说类别'[novel$小说类型=="武侠小说"|novel$小说类型=="仙侠小说"] <- "武侠类小说" 
+
+ratio=table(novel$'小说类别')/sum(table(novel$'小说类别'))*100
+label1=names(ratio)
+label2=paste0(round(ratio,2),"%")
+pie(ratio,col=rainbow(4,alpha=0.6),labels=paste(label1,label2,sep="\n"),font=1)
+```
+
+## 连续性定量变量
+
+直方图
+
+```{r}
+novel$总字数=novel$总字数/10000
+par(mfrow=c(1,2))
+chara=sort(novel$总字数)[1:1500]
+hist(chara,breaks=10,xlab="总字数(万字)",ylab="频数",col="lightgreen")
+hist(chara,breaks=100,xlab="总字数(万字)",ylab="频数",col="lightgreen")
+```
+折线图
+
+```{r}
+par(mfrow=c(1,1))
+data(AirPassengers)
+plot(AirPassengers)
+```
+
+```{r, warning=F, message=F}
+library(zoo)
+index=c(127910,395976,740802,966845,1223419,1465722,1931489,2514324,3024847,3174056,3208696,3644736,4198117,3868350,3576440,3524784,3621275,3695967,3728965,3845193,3525579,3452680,3535350,3655541,3884779,3780629)/10000
+date<-seq(as.Date("2017-3-28"), length=26, by="day") 
+people_index=zoo(index,date)
+plot(people_index,xlab="时间",ylab="搜索指数")
+```
+
+```{r}
+
+```
+
+## 定性变量与定量变量
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(log(总点击数)~小说性质,col=rainbow(2,alpha=.5),names=c("公众作品","VIP 作品"),ylab="总点击数对数")
+boxplot(log(评论数)~小说性质,col=rainbow(2,alpha=.5),names=c("公众作品","VIP 作品"),ylab="总点击数对数")
+```
+散点图
+
+```{r}
+par(mfrow=c(1,1))
+test=novel[评论数<8000 & 总点击数<200000, ]
+
+
+```
+
+```{r}
+
+```
+
+散点图矩阵
+
+```{r}
+plot(iris[,1:4])
+```
+分类堆积柱状图
+```{r}
+library(plyr)
+library(reshape2)
+a=ddply(novel,.(小说类别,小说性质),nrow)
+d=dcast(a,小说性质~小说类别)[,-1]
+
+rownames(d)=c("VIP 作品","大众作品")
+d=as.matrix(d)
+```
+
+```{r}
+barplot(d,beside=F,col=rainbow(2,alpha=.3))
+legend("topright",legend=c("VIP 作品","大众作品"),fill=rainbow(2,alpha=.3),cex=.8)
+```
+
+
+```{r}
+barplot(d,beside=T,col=rainbow(2,alpha=.3))
+legend("topright",legend=c("VIP 作品","大众作品"),fill=rainbow(2,alpha=.3),cex=.8)
+
+```
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```

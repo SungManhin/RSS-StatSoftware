@@ -1,0 +1,16 @@
+---
+title: "甄嬛传爬虫"
+author: "SungManhin"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+APIKey <- "AIzaSyCprJn5q9go4nfiK5LqKqgoFLtTLn42K4w" 
+Authorize <- AuthenticateWithYoutubeAPI(APIKey)
+VideoID <- c("D9YZw_X5UzQ")
+myutubedata<-CollectDataYoutube(videoIDs = VideoID, apiKeyYoutube = APIKey, writeToFile = FALSE)
+
+```
+
+

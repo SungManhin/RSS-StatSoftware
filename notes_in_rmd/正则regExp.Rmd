@@ -1,0 +1,94 @@
+---
+title: "Untitled"
+author: "SungManhin"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r pressure}
+class(gem)
+```
+
+```{r pressure}
+order(gem$Close)
+```
+
+```{r pressure}
+as.Date('9-June-2011',"%d-%b-%Y")
+```
+
+```{r pressure}
+rbind(gem,ssm)
+```
+
+```{r pressure}
+a=c(1,2,3,4,5,5,5,1,1,2)
+length(unique(gem$Open))
+```
+
+```{r pressure}
+data=data.frame(cat=c("da","da","xiao",NA,NA,"medium"),s=c(1,2,3,4,5,5))
+summary(data)
+data[which(is.na(data$cat)),]$cat=1
+x=1:6
+data[4]=x
+sample(length(data$cat),5)
+data
+```
+
+```{r}
+library(stringr)
+str_extract_all(c("abc","ac","bc"),pattern="ab?c")
+grep(pattern="ab?c",c("abc","ac","bc"),value=T)
+```
+
+
+```{r}
+# str_exrtact_all 只提取符合要求的部分，grep 提取整个符合要求的字符
+str_extract_all(c("abababab","abc","ac"),"(ab)?c")
+grep("(ab)?c",c("abababab","abc","ac"),value=T)
+
+```
+
+
+```{r}
+# '.' 有其他作用
+# 这个无用 strsplit(x="strsplit.also.uses.regular.expressions",split=".")
+strsplit(x="strsplit.also.uses.regular.expressions",split="\\.")
+
+```
+
+
+```{r}
+text.weibo=c('#围棋人机大战#地方大师傅',"发手动阀十分") str_match_all(text.weibo,patatern="#.+#")
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```

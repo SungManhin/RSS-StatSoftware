@@ -1,0 +1,75 @@
+---
+title: "宋文轩_2020201532_统计软件第3次作业"
+date: "`2022-11-02"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+## 任务一
+
+```{r}
+# 文件已重编码为 utf-8
+data=read.csv("C:/Users/SungManhin/OneDrive - ruc.edu.cn/统计软件/第三次作业/data.csv")
+plot(data$某产品销量,type="b",lwd=1.2,xlab="",ylab="某产品销售量",ylim=c(100,1500),main="某产品销量时序图",yaxs="r",xaxt="n")
+axis(1,1:length(data$时间),labels=data$时间,las=2)
+abline(v=c(12,24),col="red",lwd=2)
+```
+
+```{r}
+# 构建季度时间标签
+label_season=c(seq(data$时间[1],by=3,length=4),seq(data$时间[13],by=3,length=4),seq(data$时间[25],by=3,length=4))
+
+plot(data$某产品销量,type="b",lwd=1.2,xlab="",ylab="某产品销售量",ylim=c(100,1500),main="某产品销量时序图",yaxs="r",xaxt="n")
+axis(1,seq(1,length(data$时间),by=3),labels=label_season,las=2)
+abline(v=c(12,24),col="red",lwd=2)
+```
+
+## 任务二
+
+```{r}
+plot(log(data$当月新增贷款),type="b",lwd=1.2,xlab="",ylab="对数销售量",ylim=c(4,12),main="当月新增贷款与某产品销量对比",yaxs="r",xaxt="n",col="red")
+lines(log(data$某产品销量),type="b",lwd=1.2)
+axis(1,1:length(data$时间),labels=data$时间,las=2)
+legend("topleft",lty=1,col=c("red","black"),legend=c("当月新增贷款","某产品销量"),cex=.6,lwd=1.5)
+```
+
+## 任务三
+
+```{r}
+plot(data$当月新增贷款,type="b",lwd=1.2,axes=F,ylab="",xlab="",main="当月新增贷款与房地产开发投资额对比")
+axis(2,at=seq(5000,15000,by=5000),lwd=1.2)
+par(new=T)
+plot(data$房地产开发投资额,type="b",lwd=1.2,pch="*",col="red",axes=F,ylab="",xlab="")
+axis(1,1:length(data$时间),labels=data$时间,las=2,lwd=1.2,)
+axis(4,at=seq(2000,6000,by=1000),col="red",lwd=1.2)
+legend("topleft",lty=1,pch=c("o","*"),col=c("black","red"),legend=c("当月新增贷款","某产品销量"),cex=1,lwd=1.5)
+```
+
+## 任务四
+
+```{r, message=F, warning=F}
+library(plotly)
+a=load("C:/Users/SungManhin/OneDrive - ruc.edu.cn/统计软件/AAPL.rda")
+mat=data.frame(Date=AAPL$Date,AAPL=round(AAPL$Adj.Close,2))
+announced=c("2010-06-07","2011-10-04","2012-09-12","2013-09-10","2014-09-09","2015-09-09","2016-09-08")
+product=c("iPhone 4","iPhone 4s","iPhone 5","iPhone 5s","iPhone 6","iPhone 6s","iPhone 7")
+
+# 添加发布会日期
+# 获取发布会日期对应的股票价格
+stock_price=mat$AAPL[rev(which(mat$Date%in%announced))]
+# 构造 marker
+announcement=data.frame(time=announced,price=stock_price)
+
+
+  
+p=plot_ly(mat,x=~Date,y=~AAPL,type='scatter',mode='lines',name="股票价格")%>% # 绘制折线图
+add_annotations(data=announcement,x=~time,y=~price,text=product,xanchor='center',showarrow=F)%>% # 绘制产品标签
+add_markers(data=announcement,x=~time,y=~price,type='scatter',mode="markers",name="发布会")%>% # 绘制散点 
+layout(xaxis=list(title="",showticklabels=TRUE,tickfont=list(size=8)),yaxis=list(title="调整收盘价（美元）"),title="苹果股票价格与新苹果手机的发布",showlegend=T) 
+
+p
+
+
+```
+

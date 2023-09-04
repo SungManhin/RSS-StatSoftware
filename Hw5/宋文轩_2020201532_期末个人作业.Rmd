@@ -1,0 +1,374 @@
+---
+title: "宋文轩 2020201532 期末个人作业"
+author: "宋文轩"
+output:
+  rmdformats::readthedown:
+    self_contained: true
+    thumbnails: false
+    lightbox: true
+    toc_depth: 4
+    gallery: true
+    highlight: tango
+    df_print: kable
+    
+---
+<font face="songti">
+<style>
+#main .nav-pills > li.active > a,
+#main .nav-pills > li.active > a:hover,
+#main .nav-pills > li.active > a:focus {
+    background-color: #4a47a3;
+}
+#main .nav-pills > li > a:hover {
+color: #FFFFFF !important;
+background-color: #4a47a3;
+}
+#main .nav-pills > li.active > a,
+#main .nav-pills > li.active > a:hover,
+#main .nav-pills > li.active > a:focus {
+color: #FFFFFF !important;
+background-color: #4a47a3;
+}
+
+#main .nav-pills > li > a:hover {
+    background-color: #4a47a3;
+}
+
+h1, h2, h3, h4, h5, h6, legend {
+    color: #4a47a3;
+}
+
+#nav-top span.glyphicon {
+    color: #4a47a3;
+}
+
+#table-of-contents header {
+    color: #4a47a3;
+}
+
+#table-of-contents h2 {
+    background-color: #4a47a3;
+}
+
+#main a {
+    background-image: linear-gradient(180deg,#d64a70,#d64a70);
+    color: #c7254e;
+}
+
+a:hover {
+    color: #3d1308;
+}
+
+a:visited {
+    color: #3d1308;
+}
+#postamble .date {
+font-size: 100%;
+margin-bottom: 0px;
+color: #dcd6f7;
+}
+#sidebar h2{
+z-index:200;
+background-color:#4a47a3;
+text-align:center;
+padding:0.809em;
+display:block;
+color:#fcfcfc;
+font-size: 100%;
+margin-top: 0px;
+margin-bottom:0.809em;
+}
+</style>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  "HTML-CSS": { linebreaks: { automatic: true } },
+         SVG: { linebreaks: { automatic: true } }
+});
+</script>
+
+## 导入包和读入数据
+
+```{r, message=F}
+library(ggplot2)
+library(stringr)
+library(plotly)
+library(ggridges)
+library(reshape2)
+library(patchwork)
+library(RColorBrewer)
+library(car)
+library(caret)
+
+data=read.csv("music.csv",header=T,fileEncoding="UTF-8")
+
+# 数据变量的类型和范围总览
+summary(data)
+```
+
+## 衍生变量生成
+
+### 讨论度
+
+讨论度定义为歌单的评论数和歌单列表曲目的比值，拥有更多歌曲会为整个歌单带来更多的评论数量和讨论热度。评论数与列表曲目的比值越高，代表该歌单平均每首曲目的评论数更多，可用来衡量该歌单的讨论热度和热门程度。
+
+```{r}
+data$discussion=data$comment_count/data$playlists
+```
+
+### 出圈度
+
+出圈度定义为歌单的收藏数和歌单创建人粉丝数的比值。当一个歌单的收藏量远远高于粉丝数量，说明这一个歌单的影响范围已经超出了粉丝小群体，一定程度上反映了歌单的“火爆”，衡量歌单出圈引发的播放量暴涨程度。
+
+```{r}
+data$collect_ratio=data$collect_count/data$fans
+```
+
+### 标签数
+
+标签数为一个歌单标签的数量，由于原数据的标签采取了 `["标签1","标签2",...]` 的记录形式，需使用正则表达式进行提取。标签数更多的歌单代表了歌单风格的多元化，也能更好地吸引到通过歌单标签筛选符合自己兴趣歌单的用户。
+
+```{r}
+data$topic_list=sapply(data$topics,str_extract_all,"(?<=\")[\\w/&; ]+(?=\")")
+data$topic_num=sapply(data$topic_list,length)
+data$topic_num=as.factor(data$topic_num)
+```
+
+## 描述性分析
+
+这里选取评论数，分享数，收藏数及标签信息进行描述性分析。
+
+![](https://s1.ax1x.com/2023/01/12/pSuR6OO.jpg)
+
+### 评论，分享，收藏综合分析
+
+首先绘制三个自变量的密度岭线图。可观察到密度曲线集中分布于坐标轴左侧，限制数据范围在 (0,1000) ，四组自变量的分布均呈现出明显的右偏分布。对自变量进行对数处理，可观察到密度近似服从正态分布形状。
+
+```{r, message=F, warning=F}
+col_pal=c("#3969AC","#E68310","#11A579")
+
+p=ggplot(melt(data[,6:8]),
+       aes(x=value,
+           y=variable,
+           color=variable,
+           fill=variable))+
+     geom_density_ridges(rel_min_height=0.01)+
+       scale_color_manual(values=col_pal,
+                          guide="none")+
+        scale_fill_manual(values=col_pal,
+                           guide="none")+
+        xlab("数量")+ylab("")+
+          scale_y_discrete(labels=c("收藏数",
+                                    "分享数",
+                                    "评论数"))+
+            theme(plot.title = element_text(hjust=0.5))
+
+p1=p+ggtitle("评论数，分享数，收藏数密度岭线图")
+p2=p+scale_x_continuous(limits=c(0,1000))+ggtitle("评论数，分享数，收藏数密度岭线图 (0<x<1e3)")
+p3=ggplot(melt(data[,6:8]),
+       aes(x=log(value+1),
+           y=variable,
+           color=variable,
+           fill=variable))+
+     geom_density_ridges(rel_min_height=0.01)+
+       scale_color_manual(values=col_pal,
+                          guide="none")+
+        scale_fill_manual(values=col_pal,
+                           guide="none")+
+        xlab("数量")+ylab("")+
+          scale_y_discrete(labels=c("收藏数",
+                                    "分享数",
+                                    "评论数"))+
+            theme(plot.title=element_text(hjust=0.5))+
+              ggtitle("评论数，分享数，收藏数对数密度岭线图")
+              
+
+p1/p2/p3
+```
+
+由岭线图可知，大部分歌单的评论、分享、收藏数是较小的（小于 1000），但有极少数歌单因为本身质量较高或其他原因“出圈”，评论、分享和收藏量是大部分歌单的数十倍甚至数百倍，属于真正“热门”的歌单。这一分布规律也符合互联网上较为常见的 [“二八定律”](https://zhuanlan.zhihu.com/p/43751364) ，也即关键节点获取整个网络中的大部分流量。
+
+下面绘制评论数，分享数，收藏数，播放数的三维散点图，探究变量之间的关系。其中因变量播放数以渐变的颜色来展示数量大小。
+
+```{r}
+plot_ly(
+  data,
+  x=~share_count,
+  y=~collect_count,
+  z=~comment_count,
+  marker=list(
+    color=~comment_count,
+    colorscale=c('#FFE1A1','#683531'), 
+    showscale=T,
+    size=6
+  )) %>%
+  add_markers() %>%
+    layout(
+      title="评论、分享、收藏、与播放数三维散点图",
+      scene=list(
+      xaxis=list(title='分享数'),
+      yaxis=list(title='收藏数'),
+      zaxis=list(title='评论数')
+    ),
+    annotations=list(
+      x=1.03,
+      y=0.98,
+      text='播放数',
+      xref='paper',
+      yref='paper',
+      showarrow=F
+    ))
+```
+
+从三维散点图中可以看出歌单的分享数，收藏数，评论数与播放数之间均呈现大致正相关关系，播放数也随三个自变量的增加而有增加的趋势。散点图中有两个远离数据中心但符合总体趋势的点，可认为是非常受欢迎的两个歌单（也就是前面岭线图中长尾部分的点）。一般而言，歌单越受欢迎，播放量越高，三个自变量数值也越大；对于优质的歌单，用户有分享、收藏和表达观点的冲动。
+
+### 标签信息综合分析
+
+首先根据标签出现频数绘制热门标签 top 10 条形图。
+
+```{r}
+tags=as.data.frame(sort(table(unlist(data$topic_list)),decreasing=T))
+tags$Var1=factor(tags$Var1,levels=rev(tags$Var1))
+ggplot(data=tags[1:10,],aes(x=Freq,y=Var1))+
+  geom_col(fill=rev(colorRampPalette(colors=brewer.pal(9,"OrRd"),interpolate="spline")(10)))+
+    xlab("频数")+
+      ylab("标签")+
+        theme(plot.title=element_text(hjust=0.5))+
+          ggtitle("热门标签 top 10")
+```
+
+从图中可以看出，最热门的标签依次是欧美、流行、华语、电子和 ACG 。欧美流行乐是最受欢迎的云音乐类型，这两个标签也就成为了“热单密码”。下面探究标签数量的分布。
+
+```{r}
+ggplot(data=data,aes(x=topic_num))+
+  geom_bar(stat="count",fill=brewer.pal(3,"YlOrBr"))+
+    xlab("标签数")+
+      ylab("歌单数量")+
+        theme(plot.title=element_text(hjust=0.5))+
+          ggtitle("标签数量分布")
+```
+
+从标签数量的分布中也可以看出大部分歌单包含 3 个标签，较少歌单包含 1 个或 2 个标签。数量更多的标签在音乐平台中可以获得更多的推广，也更容易收获不同音乐偏好人群的青睐，大部分歌单均标记 3 个标签来获得尽可能多的流量。
+
+## 回归分析
+
+### 全模型
+
+这里选取 `collect_count`, `share_count`, `comment_count`, `fans`, `playlists`, `discussion`, `collect_ratio`, `topic_num`, `create_time` 及所有关键词分类变量 `name_*` 作为自变量，考察其对因变量 `play_count` 的影响。考虑到数据特点和分布特点，对 `create_time` (时间戳形式，表现为距离格林威治时间 1970 年 1 月 1 日 00 时 00 分 00 秒的秒数) 做归一化处理。
+
+```{r}
+data$create_time=(data$create_time-min(data$create_time))/(max(data$create_time)-min(data$create_time))*100
+design_matrix=data[,c(3,5:8,10:28,30)]
+```
+
+```{r}
+fit=lm(play_count~.,design_matrix)
+summary(fit)
+```
+
+从回归结果看，调整后 $R^2$ 为 0.8839 ，模型拟合度较好； $F$ 检验也通过，但是有较多变量不显著，需进一步进行分析。
+
+### 多重共线性
+
+```{r}
+vif(fit)
+```
+
+由 VIF 可知模型多重共线性问题并不严重。
+
+### 选模型
+
+```{r}
+fit_select=step(fit,trace=0)
+summary(fit_select)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(fit_select,which=c(1:4))
+```
+
+可以看到，经过变量筛选后， $R^2$ 略有提升；大部分变量是显著的；存在异方差现象；存在 3 个异常值点；残差不符合正态性。普通回归仍存在一些问题。
+
+下面删去设计矩阵中的异常值数据，对因变量和 `collect_count`, `share_count`, `comment_count` 三个自变量做对数变换 (其中 `comment_count` 含有 0 值，做 +1 处理)，重复上面的回归流程。
+
+```{r}
+# 构建选模型对应的设计矩阵，去掉异常值
+design_matrix2=design_matrix[-c(906,1475,1660),]
+design_matrix2$collect_count=log(design_matrix2$collect_count)
+design_matrix2$share_count=log(design_matrix2$share_count)
+design_matrix2$comment_count=log(design_matrix2$comment_count+1)
+
+fit2=lm(log(play_count)~.,design_matrix2)
+
+# 逐步回归
+fit2_select=step(fit2,trace=0)
+summary(fit2_select)
+
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(fit2_select,which=c(1:4))
+```
+
+可以看到此时：
+
+ - 模型调整后 $R^2$ 为 0.9169，相比原模型有较大提升，拟合程度较好。
+ 
+ - 收藏数，分享数对于播放数的影响十分显著，系数均大于 0 小于 1 ； log-log 模型下，系数的值可理解为弹性：说明收藏数和分享数均与播放数呈正相关关系，但收藏数和分享数对播放数的边际贡献在减小，播放数对两者的敏感度在降低。这也说明，对于一些较受欢迎的歌单，分享数和收藏数差距不大，不能很好地描述受欢迎程度的具体差别。
+ 
+ - 粉丝数和列表歌曲数目的回归系数分别为正和负。粉丝数越多，歌单能够接触到的用户也越多，播放数也会更高；而歌单越长，很可能对用户完整听完一张歌单的吸引力在下降，导致播放数下降。但是这两个系数均较小，仅对播放数产生 $+0.0001361\%$ 和 $-0.04906\%$ 的影响，几乎可忽略不计。
+ 
+ - 欧美、粤语、民谣、女声、节奏、经典等关键词能给歌单带来更高的播放数，这些关键词更容易吸引到听众，另一方面也反映了观众对云音乐的审美。歌单名中带有爵士、古风、东方等会给观众造成“劝退”效果，这也可能是因为爵士乐起源于上世纪二十年代，在一百年的历史中已经发展出更多符合现代审美的流派，传统的爵士乐渐有式微的倾向；而古风、东方等流派相对小众，用户不太愿意专门在歌单中欣赏这些音乐。这些标签带有“复古”的倾向，不太容易受到主流的普遍喜爱。
+ 
+ - 讨论度更高的歌曲，播放量也更高。其他条件不变时，带有 3 个和 2 个标签的歌曲播放数平均是带有 1 个标签的歌曲播放数的 $e^{0.1416}=1.152$ 倍和 $e^{0.2229}=1.250$ 倍，说明带有更多标签的歌曲更容易受到欢迎。
+ 
+ - 发布时间越近，播放量越高——新发布的歌单包含有更多新的曲目，更容易获得人们的喜爱。
+ 
+
+## 模型预测
+
+构建 50 次 10 折交叉验证
+
+```{r}
+# 逐步回归的回归式
+formula=log(play_count)~create_time+collect_count+
+          share_count+fans+playlists+name_古风+name_经典+
+            name_爵士+name_节奏+name_女声+name_欧美+name_粤语+
+              name_民谣+name_东方+name_那些+discussion+topic_num
+
+set.seed(20230112)
+cv.train=trainControl(method="repeatedcv",number=10,repeats=50)
+model=train(formula,design_matrix2,method="lm")
+model
+```
+
+```{r}
+# MRE
+model$results$MAE/mean(log(design_matrix2$play_count))
+```
+
+50 次 10 折交叉验证得到回归模型 RMSE 为 0.5312 ， $R^2$ 为 0.9163 ，平均绝对误差 MAE 为 0.4080 ，平均相对误差 MRE 为 0.0337。综合看，MAE 和 MRE 较小； $R^2$ 表现较好，显现出较高的拟合度；而 RMSE 稍大，认为模型仍存在一定偏差。
+
+## 总结
+
+通过建构模型，评估模型和改进模型的过程，可得到影响云音乐播放量的主要因素有：
+
+ - 收藏数、分享数对播放量有正面影响。
+ 
+ - 粉丝数越多，歌单播放量越高，但影响较小。
+
+ - 歌单名带是否含有欧美、粤语、民谣、女声、节奏、经典等关键词，包含这些词的歌单往往拥有更高的播放量。
+
+ - 歌单包含的标签数量，越多越好。
+
+ - 发布时间越近，播放量越高。
+
+
+
+
+
+
+
+
+

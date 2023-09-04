@@ -1,0 +1,12 @@
+name：歌单名
+author：歌单作者
+create_time：歌单创建时间
+introduction：歌单简介
+play_count：播放数
+collect_count：收藏数
+share_count：分享数
+comment_count：评论数
+topics：标签
+fans：粉丝数
+playlists：歌曲列表数目
+剩下的列：表示歌单名中是否含有某关键词，以变量“name_古风”为例，“是”指歌单名包含词语“古风”，“否”指歌单名不含词语“古风”。

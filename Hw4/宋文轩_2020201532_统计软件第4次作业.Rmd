@@ -1,0 +1,183 @@
+---
+title: "宋文轩_2020201532_统计软件第4次作业"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+---
+
+## 任务一
+
+```{r, message=F}
+data=read.csv("C:/Users/SungManhin/OneDrive - ruc.edu.cn/统计软件/第四次作业/BearTrip.csv")
+attach(data)
+sum(is.na(data))
+```
+
+数据无缺失值
+
+```{r}
+dim(data)
+```
+
+样本量为 4366 ，共 27 个变量
+
+```{r}
+summary(data)
+```
+
+## 任务二
+
+```{r, warning=F, message=F}
+library(tidyverse)
+data %>%
+  group_by(type) %>% 
+     summarize(mean.3month=mean(threemonth)) %>% 
+          ggplot(mapping=aes(x=reorder(type,-mean.3month),y=mean.3month))+
+            geom_bar(stat="identity")+
+               xlab("旅游地区")+ylab("近三个月成交量")
+```
+
+## 任务三
+
+```{r, warning=F, message=F}
+library(reshape2)
+bonus=c("giftcard","teamdiscount","discount","earlydiscount","vipdiscount")
+bonus.cn=c("礼品卡","多人立减","优惠信息","早定优惠","会员价")
+
+
+# 通过 tapply 构建参加或不参加优惠活动下的平均成交量
+discount_giftcard=tapply(threemonth,giftcard,mean)
+discount_team=tapply(threemonth,teamdiscount,mean)
+discount_disc=tapply(threemonth,discount,mean)
+discount_early=tapply(threemonth,earlydiscount,mean)
+discount_vip=tapply(threemonth,vipdiscount,mean)
+
+discount.group=as.data.frame(rbind(discount_giftcard,discount_team,discount_disc,discount_early,discount_vip))
+discount.group$活动信息=bonus.cn
+
+# 宽表变长表
+discount.group.melted=melt(discount.group,id.vars="活动信息",variable.name="是否参加优惠",value.name="平均成交量")
+knitr::kable(discount.group.melted)
+```
+
+```{r}
+ggplot(data=discount.group.melted,aes(x=活动信息,fill=是否参加优惠,y=平均成交量))+
+   geom_bar(stat="identity",position="dodge")+
+         scale_fill_discrete(labels=c("否","是"))+
+            ylab("近三个月成交量")
+```
+
+观察 **平均成交量** 与 **活动信息** 分组柱状图，得出以下三点结论：
+
+1.  不参加优惠时平均成交量（限定近三个月来，以下省略）基本相同；任何一种优惠活动均能带来平均成交量的提升。
+
+2.  **会员价** 优惠带来的平均成交量提升最大， **多人立减** 和 **早定优惠** 两项优惠带来的平均成交量提升也较为显著， **早定优惠** 提升更大； **礼品卡** 和 **优惠信息** 两项优惠带来的平均成交量提升较小，几乎无显著区别。
+
+3.  可认为 **会员价** 是最能吸引消费的优惠方式，其次是 **早定优惠** 和 **多人立减** 。
+
+## 任务四
+
+```{r}
+# 进行基准组设置
+data$combo.level=relevel(as.factor(combo.level),"经济型")
+data$title.level=relevel(as.factor(title.level),"普通")
+data$title.type=relevel(as.factor(title.type),"跟团游")
+data$hot_names=relevel(as.factor(hot_names),"普通")
+data$creditLevel=relevel(as.factor(creditLevel),1)
+
+# 全模型
+full.model=lm(data=data,log(threemonth+1)~.)
+summary(full.model)
+```
+
+观察全模型输出摘要，拟合优度 $R^2$ 仅为 0.1916 ，调整后 $R^2$ 为 0.1831 ，说明模型拟合程度较差； $\mathcal{F}$ 检验 p 值较小，模型线性关系显著；有较多变量的 $\mathcal{t}$ 检验 p 值较大，回归系数不显著。可见全模型有较多问题，需通过逐步回归筛选变量。
+
+```{r, message=F}
+library(MASS)
+step.model=stepAIC(full.model,direction="both",trace=F)
+summary(step.model)
+```
+
+应对模型整体的拟合优度（R方）、显著性（F检验）、各变量系数的值及其显著性（t检验）依次进行解释。
+
+观察经逐步回归筛选出的选模型输出摘要，在以 AIC 准则进行逐步回归后，模型保留了 20 个原始自变量；拟合优度 $R^2$ 为 0.1907 ，调整后 $R^2$ 为 0.1837 ，比全模型略有提升，但拟合效果仍然不太好； $\mathcal{F}$ 检验 p 值较小，模型线性关系显著；通过 $\mathcal{t}$ 检验的变量数显著增加， `type港澳台` 、 `price.level中` 、 `title.type半自助` 、 `title.type私家团` 、 `title.level豪华` 、 `combo.level舒适型` 、 `CRHTRUE` 、 `trip_guarantee_2TRUE` 等哑变量系数未通过检验；根据系数的值可绘制下面的表：
+
+![](2.jpg){width="800"}
+
+由于该模型为对数模型，对系数的估计解读为 **近 3 个月成交量的增长率** （忽略 +1 带来的影响），即 **控制其他因素不变时** ：
+
+-   顾客满意度 $\leqslant$ 98 的组成交量最高，顾客满意度为 100 的组最低，比 $\leqslant$ 98 的组平均低 39% （这是一个反直觉的结论，满意度越高反而成交量低，可能是因为满意度 $\leqslant$ 98 是一个很宽泛的范围，而对于满意度特别高的旅行社，由于运营高端路线不那么"亲民"，成交量反而相对较低）
+
+-   相比北京周边游，前往东亚和美洲能带来成交量 12.7% 和 12.6% 的上升，而前往港澳台和其他国内地区会会带来成交量 3% 和 6.8% 的下降。
+
+-   行程天数为长期和中期的旅程成交量比 短期降低了 10.6% 和 9.6% ，说明短期旅游产品更受欢迎。
+
+-   价格等级为中和高的旅程成交量比价格等级为低的旅程降低了 2.4% 和 13.6% ，说明便宜的旅游产品更受欢迎。
+
+-   优惠活动信息中，以礼品卡活动作为基准，采用会员价、早订优惠、多人立减分别可使成交量提升 67% ， 42% ， 33% 。
+
+$\ldots\ldots$
+
+根据图表可对变量系数数值和因变量增长率之间的关系做更多的解读，这里不再赘述。
+
+## 任务五
+
+### 单次交叉验证
+
+```{r, results="hold"}
+# 逐步回归的回归式子
+formula=log(threemonth+1)~satisfactory+storerating+
+    creditLevel+type+tripschedule+price.level+title.type+
+       title.level+combo.level+plane+CRH+train+teamdiscount+
+          discount+earlydiscount+vipdiscount+trip_guarantee_2+
+             no_forced_shopping+describes+hot_names
+
+pred.cv=function(data,k){
+  ind=sample(1:k,size=nrow(data),replace=T)
+  pred_vec=rep(0,nrow(data))
+  for(i in 1:k){
+     ii=which(ind==i)
+     obj=lm(formula,data=data[-ii,])
+     pred_vec[ii]=predict(obj,data[ii,])
+  }
+  rmse=sqrt(mean((pred_vec-log(data$threemonth+1))^2))
+  return(list(rmse=rmse,pred_vec=pred_vec))
+  
+}
+
+set.seed(123)
+cat("预测RMSE为:","\n")
+pred.cv(data,5)[[1]]
+
+```
+
+RMSE 为 0.3263 ，在 0.2~0.5 之间，数值较小，可认为模型能够较准确预测数据。
+
+### 50 次交叉验证
+
+```{r}
+set.seed(123)
+rmses=rep(0,50)
+for(i in 1:50){
+   pred_cv=pred.cv(data,5)
+   rmses[i]=pred_cv[[1]]
+}
+mean(rmses)
+```
+
+50 次 5 折交叉验证得到回归模型 RMSE 为 0.3263 ，在 0.2~0.5 之间，数值较小，可认为模型能够较准确预测数据。
+
+为计算其他指标，这里使用 `caret` 进行交叉验证。
+
+```{r, message=F}
+library(caret)
+set.seed(123)
+cv.train=trainControl(method="repeatedcv",number=5,repeats=50)
+model=train(formula,data,method="lm")
+model
+# MRE
+model$results$MAE/mean(log(data$threemonth+1))
+```
+
+50 次 5 折交叉验证得到回归模型 RMSE 为 0.3288 ， $R^2$ 为 0.1640 ，平均绝对误差 MAE 为 0.1764 ，平均相对误差 MRE 为 0.053 ；综合来看，回归模型 RMSE 、 MAE 、 MRE 均较小，可认为模型预测能力较强；而 $R^2$ 较小，说明模型拟合效果不够好，还有待于进一步完善。
